@@ -21,12 +21,11 @@ import reverseproxy.StateManager;
  *
  * @author Andre, Matias, Nuno
  */
-public class UDPServer implements Runnable {
+public class UDPServer implements Runnable 
+{
     private final DatagramSocket ServerSocket;
     private final DatagramPacket CurrentPacket;
-    private final Map<InetAddress,ArrayBlockingQueue<DatagramPacket>> QueueMap;
-    private final Map<InetAddress,Boolean> CongestionInQueueMap;
-    private final Map<InetAddress,Future<?>> ThreadsActiveHandlersMap;
+    private final Map<InetAddress,ThreadData> ThreadDataMap;
     private final WorkerFactory SocketWorkerFactory;
     private final StateManager StateManager;
     
@@ -34,10 +33,8 @@ public class UDPServer implements Runnable {
     {
         ServerSocket=new DatagramSocket(port);
         CurrentPacket = new DatagramPacket(new byte[40],40);
-        QueueMap = new HashMap<>(30);
-        CongestionInQueueMap = new HashMap<>(30);
+        ThreadDataMap = new HashMap<>(30);
         SocketWorkerFactory = new WorkerFactory();
-        ThreadsActiveHandlersMap = new HashMap<>(30);
         this.StateManager = StateManager;
     }
 
@@ -53,17 +50,10 @@ public class UDPServer implements Runnable {
                                  CurrentPacket.getLength(), 
                                  CurrentPacket.getAddress(),
                                  CurrentPacket.getPort()));
-        
-        QueueMap.put(CurrentPacket.getAddress(), q);
-        ThreadsActiveHandlersMap
-                .put(CurrentPacket.getAddress(), 
-                     SocketWorkerFactory.buildSocketWorker
-                            (
-                            QueueMap.get(CurrentPacket.getAddress()),
-                            ServerSocket,
-                            StateManager
-                            )
-                    );
+        Future<?> f=SocketWorkerFactory.buildSocketWorker
+                        (q,ServerSocket,StateManager);
+        ThreadData t=new ThreadData(q,false,f);
+        ThreadDataMap.put(CurrentPacket.getAddress(),t);
     }
 
     @Override
@@ -80,7 +70,7 @@ public class UDPServer implements Runnable {
                 //Should handle carefully packet corruption
                 Logger.getLogger(UDPServer.class.getName()).log(Level.SEVERE, null, ex);
             }
-            if(QueueMap.containsKey(CurrentPacket.getAddress()))
+            if(ThreadDataMap.containsKey(CurrentPacket.getAddress()))
             {
                 handleUDPPacket();
             }
@@ -93,7 +83,20 @@ public class UDPServer implements Runnable {
 
     private void handleUDPPacket() 
     {
-        
+        DatagramPacket clone=new DatagramPacket
+                                (CurrentPacket.getData().clone(),
+                                 CurrentPacket.getLength(), 
+                                 CurrentPacket.getAddress(),
+                                 CurrentPacket.getPort()
+                                );
+        ThreadData currentT = ThreadDataMap.get(CurrentPacket.getAddress());
+        ArrayBlockingQueue<DatagramPacket> pq = currentT.getPacketQueue();
+        boolean bPostedSucessfully=pq.add(clone);
+        if(!bPostedSucessfully) 
+        {
+            currentT.setUnderCongestion(true);
+            pq.clear();
+        }
     }
     
     
