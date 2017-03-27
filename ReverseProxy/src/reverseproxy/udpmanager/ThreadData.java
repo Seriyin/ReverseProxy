@@ -18,13 +18,12 @@ public class ThreadData
 {
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
     private boolean bUnderCongestion;
-    private final Future<?> ThreadHandle;
+    private Future<?> ThreadHandle;
     
-    ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b, Future<?> th) 
+    ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b) 
     {
         PacketQueue=q;
         bUnderCongestion=b;
-        ThreadHandle=th;
     }
 
     ArrayBlockingQueue<DatagramPacket> getPacketQueue() 
@@ -45,13 +44,20 @@ public class ThreadData
         return bUnderCongestion;
     }
 
-    public void setUnderCongestion(boolean uc) {
+    public void setUnderCongestion(boolean uc) 
+    {
         bUnderCongestion = uc;
     }
 
     
-    public Future<?> getThreadHandle() {
+    public Future<?> getThreadHandle() 
+    {
         return ThreadHandle;
+    }
+    
+    public void registerThreadHandle(Future <?> th) 
+    {
+        ThreadHandle = th;
     }
     
 }

@@ -32,12 +32,12 @@ public class WorkerFactory
         FixedThreadPool = Executors.newFixedThreadPool(2048);
     }
     
-    public Future<?> buildSocketWorker(ArrayBlockingQueue<DatagramPacket> PacketQueue,
-                                  DatagramSocket RequestsSocket,
-                                  StateManager StateManager) 
+    public Future<?> buildSocketWorker(ThreadData ThreadData,
+                                       DatagramSocket RequestsSocket,
+                                       StateManager StateManager) 
     {
         return FixedThreadPool.submit(new WorkerProcessor(RequestsSocket,
-                                                          PacketQueue,
+                                                          ThreadData,
                                                           StateManager));
     }
     

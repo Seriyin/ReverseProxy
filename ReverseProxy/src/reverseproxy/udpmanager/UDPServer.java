@@ -50,9 +50,9 @@ public class UDPServer implements Runnable
                                  CurrentPacket.getLength(), 
                                  CurrentPacket.getAddress(),
                                  CurrentPacket.getPort()));
-        Future<?> f=SocketWorkerFactory.buildSocketWorker
-                        (q,ServerSocket,StateManager);
-        ThreadData t=new ThreadData(q,false,f);
+        ThreadData t=new ThreadData(q,false);
+        t.registerThreadHandle(SocketWorkerFactory.buildSocketWorker
+                                                   (t,ServerSocket,StateManager));
         ThreadDataMap.put(CurrentPacket.getAddress(),t);
     }
 
