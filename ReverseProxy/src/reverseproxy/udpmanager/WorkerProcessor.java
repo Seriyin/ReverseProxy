@@ -7,8 +7,9 @@ package reverseproxy.udpmanager;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
+import reverseproxy.PriorityData;
 import reverseproxy.StateManager;
 
 /**
@@ -19,14 +20,19 @@ public class WorkerProcessor implements Runnable
 {
     private final DatagramSocket RequestsSocket;
     private final ThreadData ThreadData;
-    private final StateManager StateManager;
+    private final ConcurrentSkipListSet ConnectionPriorityMap;
     private DatagramPacket CurrentPacket;
+    private final PriorityData PriorityData;
     
-    public WorkerProcessor(DatagramSocket RequestsSocket, ThreadData ThreadData, StateManager StateManager) 
+    public WorkerProcessor(DatagramSocket RequestsSocket, 
+                           ThreadData ThreadData,
+                           StateManager StateManager) 
     {
-        this.StateManager = StateManager;
         this.RequestsSocket = RequestsSocket;
         this.ThreadData = ThreadData;
+        PriorityData = new PriorityData(ThreadData.getAddress());
+        ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
+        ConnectionPriorityMap.add(PriorityData);
     }
 
     @Override

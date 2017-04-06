@@ -5,9 +5,7 @@
  */
 package reverseproxy.udpmanager;
 
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -27,9 +25,9 @@ public class WorkerFactory
 {
     private final ExecutorService FixedThreadPool;
     
-    public WorkerFactory()
+    public WorkerFactory(StateManager StateManager)
     {
-        FixedThreadPool = Executors.newFixedThreadPool(2048);
+        FixedThreadPool = Executors.newFixedThreadPool(StateManager.getMaxConnections());
     }
     
     public Future<?> buildSocketWorker(ThreadData ThreadData,

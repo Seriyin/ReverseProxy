@@ -6,6 +6,7 @@
 package reverseproxy.udpmanager;
 
 import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
 
@@ -19,11 +20,13 @@ public class ThreadData
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
     private boolean bUnderCongestion;
     private Future<?> ThreadHandle;
+    private InetAddress associatedAddress;
     
-    ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b) 
+    ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b,InetAddress addr) 
     {
         PacketQueue=q;
         bUnderCongestion=b;
+        associatedAddress=addr;
     }
 
     ArrayBlockingQueue<DatagramPacket> getPacketQueue() 
@@ -31,6 +34,10 @@ public class ThreadData
         return PacketQueue;
     }
 
+    InetAddress getAddress()
+    {
+        return associatedAddress;
+    }
     
     /**
      *  Congestion is needed only when the UDP server lags.

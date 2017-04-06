@@ -5,21 +5,59 @@
  */
 package reverseproxy;
 
-import java.net.InetAddress;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.util.concurrent.ConcurrentSkipListSet;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 /**
  *
  * @author Andre, Matias, Nuno
  */
-public class StateManager 
+public final class StateManager 
 {
-    private final Map<InetAddress,PriorityData> ConnectionPriorityMap;
+    private int MaxServerConnections;
+    private int WindowSize;
+    private float PacketTimeout;
+    private final ConcurrentSkipListSet<PriorityData> ConnectionPriorityMap;
     
-    public StateManager() 
+    private StateManager() 
     {
-        ConnectionPriorityMap = new HashMap<>(30);
+        JsonReader jsr;
+        try 
+        {
+            //
+            jsr = Json.createReader(
+                        new BufferedReader(
+                            new InputStreamReader(
+                                 new FileInputStream(
+                                        new File("./config.json")))));
+            JsonObject jso;
+            jso=jsr.readObject();
+            MaxServerConnections = jso.getJsonNumber("MaxServerConnections").intValueExact();
+            WindowSize = jso.getJsonNumber("WindowSize").intValueExact();
+            PacketTimeout = jso.getJsonNumber("PacketTimeout").bigDecimalValue().floatValue();
+        } 
+        catch (Exception ex) 
+        {
+            MaxServerConnections=64;
+            WindowSize=10;
+            PacketTimeout=5;
+        }
+        ConnectionPriorityMap = new ConcurrentSkipListSet<>(new PriorityComparator());
     }
-    
+
+    public ConcurrentSkipListSet<PriorityData> getConnectionPriorityMap() 
+    {
+        return ConnectionPriorityMap;
+    }
+
+    public int getMaxConnections() 
+    {
+        return MaxServerConnections;
+    }
 }

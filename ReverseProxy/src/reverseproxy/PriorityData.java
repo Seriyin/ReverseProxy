@@ -5,11 +5,21 @@
  */
 package reverseproxy;
 
+import java.net.InetAddress;
+
 /**
  *
  * @author Andre, Matias, Nuno
  */
 public class PriorityData 
 {
+    InetAddress ServerAddress;
+    int windowdrop;
+    float rttestimated;
+    int activeconnections;
     
+    public PriorityData(InetAddress addr) 
+    {
+        InetAddress ServerAddress=addr;
+    }
 }

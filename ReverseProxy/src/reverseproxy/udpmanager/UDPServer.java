@@ -12,7 +12,6 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import reverseproxy.StateManager;
@@ -34,7 +33,7 @@ public class UDPServer implements Runnable
         ServerSocket=new DatagramSocket(port);
         CurrentPacket = new DatagramPacket(new byte[40],40);
         ThreadDataMap = new HashMap<>(30);
-        SocketWorkerFactory = new WorkerFactory();
+        SocketWorkerFactory = new WorkerFactory(StateManager);
         this.StateManager = StateManager;
     }
 
@@ -45,12 +44,13 @@ public class UDPServer implements Runnable
      */    
     private void buildSocketWorkerForIP() 
     {
+        InetAddress addr=CurrentPacket.getAddress();
         ArrayBlockingQueue<DatagramPacket> q = new ArrayBlockingQueue<>(50);
         q.add(new DatagramPacket(CurrentPacket.getData().clone(),
                                  CurrentPacket.getLength(), 
-                                 CurrentPacket.getAddress(),
+                                 addr,
                                  CurrentPacket.getPort()));
-        ThreadData t=new ThreadData(q,false);
+        ThreadData t=new ThreadData(q,false,addr);
         t.registerThreadHandle(SocketWorkerFactory.buildSocketWorker
                                                    (t,ServerSocket,StateManager));
         ThreadDataMap.put(CurrentPacket.getAddress(),t);
