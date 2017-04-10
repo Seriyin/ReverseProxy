@@ -22,4 +22,9 @@ public class PriorityData
     {
         InetAddress ServerAddress=addr;
     }
+    
+    public float calculatePriority() 
+    {
+        return activeconnections*rttestimated*windowdrop;
+    }
 }

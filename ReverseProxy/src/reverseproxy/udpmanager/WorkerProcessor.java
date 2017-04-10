@@ -61,11 +61,13 @@ public class WorkerProcessor implements Runnable
         killAssociatedServer();
     }
 
-    private void handlePacket() {
+    private void handlePacket() 
+    {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private void killAssociatedServer() {
+    private void killAssociatedServer() 
+    {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

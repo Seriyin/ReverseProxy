@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -48,7 +49,7 @@ public final class StateManager
             WindowSize=10;
             PacketTimeout=5;
         }
-        ConnectionPriorityMap = new ConcurrentSkipListSet<>(new PriorityComparator());
+        ConnectionPriorityMap = new ConcurrentSkipListSet<>(Comparator.comparing(PriorityData::calculatePriority));
     }
 
     public ConcurrentSkipListSet<PriorityData> getConnectionPriorityMap() 
