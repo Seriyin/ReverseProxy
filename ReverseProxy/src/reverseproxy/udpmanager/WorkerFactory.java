@@ -27,7 +27,7 @@ public class WorkerFactory
     
     public WorkerFactory(StateManager StateManager)
     {
-        FixedThreadPool = Executors.newFixedThreadPool(StateManager.getMaxConnections());
+        FixedThreadPool = Executors.newFixedThreadPool(StateManager.getMaxServerConnections());
     }
     
     public Future<?> buildSocketWorker(ThreadData ThreadData,

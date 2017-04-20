@@ -18,6 +18,7 @@ import reverseproxy.StateManager;
  */
 public class WorkerProcessor implements Runnable 
 {
+    private final int PollTime;
     private final DatagramSocket RequestsSocket;
     private final ThreadData ThreadData;
     private final ConcurrentSkipListSet ConnectionPriorityMap;
@@ -28,6 +29,7 @@ public class WorkerProcessor implements Runnable
                            ThreadData ThreadData,
                            StateManager StateManager) 
     {
+        PollTime=StateManager.getPacketTimeout();
         this.RequestsSocket = RequestsSocket;
         this.ThreadData = ThreadData;
         PriorityData = new PriorityData(ThreadData.getAddress());
@@ -40,35 +42,62 @@ public class WorkerProcessor implements Runnable
     {
         try 
         {
-            int count=0;
-            //Three timeouts means kill server.
-            while(count<3) 
+            if(negotiateTimeout()) 
             {
-                while((CurrentPacket=ThreadData.getPacketQueue().poll(5, TimeUnit.SECONDS))!=null) 
+                int count=0;
+                //Three timeouts means kill server.
+                while(count<3) 
                 {
-                    handlePacket();
-                    count=0;
-                }
-                if(!ThreadData.isUnderCongestion()) 
-                {
-                    count++;
+                    while((CurrentPacket=ThreadData.getPacketQueue()
+                                                   .poll(PollTime, TimeUnit.SECONDS))!=null) 
+                    {
+                        handlePacket();
+                        count=0;
+                    }
+                    if(!ThreadData.isUnderCongestion()) 
+                    {
+                        count++;
+                    }
                 }
             }
         }
         catch(InterruptedException e) 
         {
+            System.err.println(e.getMessage());
         }
         killAssociatedServer();
     }
 
-    private void handlePacket() 
+    /**
+     * Treat packet windows here. Need to accumulate RTTs, which requires
+     * timestamping at the entrance of each packet. Need to count packet loss
+     * and discard expired packets (if they are from previous windows). Need
+     * to keep a current window counter as well.
+     */
+    private void handlePacket()
     {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     * Send a kill request. Probably won't make it. Doesn't really matter if it doesn't.
+     * The monitor will timeout and die anyway.
+     */
     private void killAssociatedServer() 
     {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
+
+    /**
+     * Need to send a special flag and 4 bytes with the timeout interval in
+     * milliseconds read from the JSON. Should try 3 times, if no ACK comes back
+     * fail and return false.
+     * @return whether the timeout was negotiated (true) or forgotten (false)
+     */
+    private boolean negotiateTimeout() 
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
     
 }

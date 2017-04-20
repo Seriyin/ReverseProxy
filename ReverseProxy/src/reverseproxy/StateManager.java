@@ -23,7 +23,7 @@ public final class StateManager
 {
     private int MaxServerConnections;
     private int WindowSize;
-    private float PacketTimeout;
+    private int PacketTimeout;
     private final ConcurrentSkipListSet<PriorityData> ConnectionPriorityMap;
     
     private StateManager() 
@@ -41,15 +41,32 @@ public final class StateManager
             jso=jsr.readObject();
             MaxServerConnections = jso.getJsonNumber("MaxServerConnections").intValueExact();
             WindowSize = jso.getJsonNumber("WindowSize").intValueExact();
-            PacketTimeout = jso.getJsonNumber("PacketTimeout").bigDecimalValue().floatValue();
+            PacketTimeout = jso.getJsonNumber("PacketTimeout").intValueExact();
         } 
         catch (Exception ex) 
         {
-            MaxServerConnections=64;
-            WindowSize=10;
-            PacketTimeout=5;
+            MaxServerConnections=1024;
+            WindowSize=30;
+            PacketTimeout=3;
         }
-        ConnectionPriorityMap = new ConcurrentSkipListSet<>(Comparator.comparing(PriorityData::calculatePriority));
+        ConnectionPriorityMap = 
+                new ConcurrentSkipListSet<>(
+                        Comparator.comparing(PriorityData::calculatePriority));
+    }
+
+    public int getMaxServerConnections() 
+    {
+        return MaxServerConnections;
+    }
+
+    public int getWindowSize() 
+    {
+        return WindowSize;
+    }
+
+    public int getPacketTimeout() 
+    {
+        return PacketTimeout;
     }
 
     public ConcurrentSkipListSet<PriorityData> getConnectionPriorityMap() 
@@ -57,8 +74,4 @@ public final class StateManager
         return ConnectionPriorityMap;
     }
 
-    public int getMaxConnections() 
-    {
-        return MaxServerConnections;
-    }
 }
