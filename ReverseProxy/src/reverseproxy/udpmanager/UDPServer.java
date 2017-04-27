@@ -31,7 +31,7 @@ public class UDPServer implements Runnable
     public UDPServer(int port,StateManager StateManager) throws IOException 
     {
         ServerSocket=new DatagramSocket(port);
-        CurrentPacket = new DatagramPacket(new byte[40],40);
+        CurrentPacket = new DatagramPacket(new byte[5],5);
         ThreadDataMap = new HashMap<>(30);
         SocketWorkerFactory = new WorkerFactory(StateManager);
         this.StateManager = StateManager;
@@ -51,7 +51,9 @@ public class UDPServer implements Runnable
                                  addr,
                                  CurrentPacket.getPort()));
         ThreadData t=new ThreadData(q,false,addr);
-        t.registerThreadHandle(SocketWorkerFactory.buildSocketWorker
+        t.registerProcessorThreadHandle(SocketWorkerFactory.buildSocketWorker
+                                                   (t,ServerSocket,StateManager));
+        t.registerProberThreadHandle(SocketWorkerFactory.buildSocketProber
                                                    (t,ServerSocket,StateManager));
         ThreadDataMap.put(CurrentPacket.getAddress(),t);
     }
@@ -92,6 +94,8 @@ public class UDPServer implements Runnable
         ThreadData currentT = ThreadDataMap.get(CurrentPacket.getAddress());
         ArrayBlockingQueue<DatagramPacket> pq = currentT.getPacketQueue();
         boolean bPostedSucessfully=pq.add(clone);
+        //Failed to send to queue, must be congestion, wipe the whole queue
+        //And keep going.
         if(!bPostedSucessfully) 
         {
             currentT.setUnderCongestion(true);

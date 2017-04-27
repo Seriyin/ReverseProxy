@@ -19,7 +19,8 @@ public class ThreadData
 {
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
     private boolean bUnderCongestion;
-    private Future<?> ThreadHandle;
+    private Future<?> ProcessorThreadHandle;
+    private Future<?> ProberThreadHandle;
     private InetAddress associatedAddress;
     
     ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b,InetAddress addr) 
@@ -57,14 +58,23 @@ public class ThreadData
     }
 
     
-    public Future<?> getThreadHandle() 
+    public Future<?> getProcessorThreadHandle() 
     {
-        return ThreadHandle;
+        return ProcessorThreadHandle;
     }
     
-    public void registerThreadHandle(Future <?> th) 
+    public void registerProcessorThreadHandle(Future <?> th) 
     {
-        ThreadHandle = th;
+        ProcessorThreadHandle = th;
     }
     
+    public Future<?> getProberThreadHandle() 
+    {
+        return ProberThreadHandle;
+    }
+    
+    public void registerProberThreadHandle(Future <?> th) 
+    {
+        ProberThreadHandle = th;
+    }
 }

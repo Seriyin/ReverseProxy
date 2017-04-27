@@ -6,6 +6,8 @@
 package reverseproxy.udpmanager;
 
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -39,6 +41,14 @@ public class WorkerFactory
                                                           StateManager));
     }
     
+    public Future<?> buildSocketProber(ThreadData ThreadData,
+                                       DatagramSocket RequestsSocket,
+                                       StateManager StateManager)
+    {
+        return FixedThreadPool.submit(new WorkerProber(ThreadData,
+                                                       RequestsSocket,
+                                                       StateManager));
+    }
     
     
 }

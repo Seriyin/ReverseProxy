@@ -21,12 +21,14 @@ import javax.json.JsonReader;
  */
 public final class StateManager 
 {
+
+    private final int port;
     private int MaxServerConnections;
     private int WindowSize;
     private int PacketTimeout;
     private final ConcurrentSkipListSet<PriorityData> ConnectionPriorityMap;
     
-    private StateManager() 
+    public StateManager(int port) 
     {
         JsonReader jsr;
         try 
@@ -49,6 +51,7 @@ public final class StateManager
             WindowSize=30;
             PacketTimeout=3;
         }
+        this.port = port;
         ConnectionPriorityMap = 
                 new ConcurrentSkipListSet<>(
                         Comparator.comparing(PriorityData::calculatePriority));
@@ -72,6 +75,11 @@ public final class StateManager
     public ConcurrentSkipListSet<PriorityData> getConnectionPriorityMap() 
     {
         return ConnectionPriorityMap;
+    }
+
+    public int getPort() 
+    {
+        return port;
     }
 
 }
