@@ -64,7 +64,13 @@ public class MonitorUDP implements Runnable
                 constructPacketHello();
                 try 
                 {
-                    ServerSocket.send(CurrentPacket);
+                    DatagramPacket neW = 
+                                new DatagramPacket(CurrentPacket.getData().clone(),
+                                                   CurrentPacket.getLength(), 
+                                                   CurrentPacket.getAddress(),
+                                                   CurrentPacket.getPort());
+                    
+                    ServerSocket.send(neW);
                 } 
                 catch (IOException ex) 
                 {
