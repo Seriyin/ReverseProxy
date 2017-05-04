@@ -27,7 +27,7 @@ public class WorkerProber implements Runnable
         UDPSocket = DatagramSocket;
         byte[] probe = new byte[1];
         probe[0] = 2;
-        ProbePacket = new DatagramPacket(probe,5,ServerIP,StateManager.getPort());
+        ProbePacket = new DatagramPacket(probe,1,ServerIP,StateManager.getPort());
     }
 
     @Override

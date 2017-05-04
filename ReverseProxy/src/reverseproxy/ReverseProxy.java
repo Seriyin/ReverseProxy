@@ -28,6 +28,7 @@ public class ReverseProxy
         {
             UDPServer UDPServer = new UDPServer(port,StateManager);
             Thread UDPManager = new Thread(UDPServer);
+            UDPManager.start();
             try {
                 Thread.sleep(80000);
             } 

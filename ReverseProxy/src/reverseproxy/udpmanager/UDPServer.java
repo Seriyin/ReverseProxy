@@ -65,6 +65,7 @@ public class UDPServer implements Runnable
         {
             try 
             {
+                System.out.println("Begin listen on " + StateManager.getPort());
                 ServerSocket.receive(CurrentPacket);
             } 
             catch (IOException ex) 
@@ -72,6 +73,7 @@ public class UDPServer implements Runnable
                 //Should handle carefully packet corruption
                 Logger.getLogger(UDPServer.class.getName()).log(Level.SEVERE, null, ex);
             }
+            System.out.println("Received Packet");
             if(ThreadDataMap.containsKey(CurrentPacket.getAddress()))
             {
                 handleUDPPacket();
