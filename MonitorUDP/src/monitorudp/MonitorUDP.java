@@ -21,13 +21,15 @@ import java.util.logging.Logger;
 public class MonitorUDP implements Runnable
 {
     private final DatagramSocket ServerSocket;
-    private final DatagramPacket CurrentPacket;
+    private DatagramPacket CurrentPacket;
     private InetAddress IP;
+    private final int port;
 
 
     public MonitorUDP(int port,String address) throws IOException 
     {
         ServerSocket=new DatagramSocket(port);
+        this.port=port;
         try 
         {
             IP = InetAddress.getByName(address);
@@ -37,7 +39,8 @@ public class MonitorUDP implements Runnable
             IP=null;
             System.err.println(e.getMessage());
         }
-        if(IP==null) 
+        
+        if(IP!=null) 
         {
             CurrentPacket = new DatagramPacket(new byte[40],40,IP,port);
         }
@@ -47,10 +50,10 @@ public class MonitorUDP implements Runnable
         }
     }
 
-    public MonitorUDP(DatagramSocket ServerSocket, DatagramPacket CurrentPacket) 
+    public MonitorUDP(DatagramSocket ServerSocket, int port) 
     {
         this.ServerSocket = ServerSocket;
-        this.CurrentPacket = CurrentPacket;
+        this.port=port;
     }
     
     @Override
@@ -58,6 +61,7 @@ public class MonitorUDP implements Runnable
     {
         try 
         {
+            CurrentPacket = new DatagramPacket(new byte[5],5,IP,port);
             while(true) 
             {
                 constructPacketHello();
@@ -85,7 +89,8 @@ public class MonitorUDP implements Runnable
     {
         try
         {
-            MonitorUDP Monitor = new MonitorUDP(5555,args[1]);
+            MonitorUDP Monitor = new MonitorUDP(5555,"192.168.100.162");
+            
             Monitor.runMonitor();
         }
         catch(IOException | InterruptedException e) 
@@ -112,7 +117,8 @@ public class MonitorUDP implements Runnable
         {
             ServerSocket.setSoTimeout(timeout);
             boolean bPacketReceiveFail=false;
-            Thread hello=new Thread(new MonitorUDP(ServerSocket,CurrentPacket));
+            Thread hello=new Thread(new MonitorUDP(ServerSocket,port));
+            hello.start();
             int count=0;
             while(count<3) 
             {
