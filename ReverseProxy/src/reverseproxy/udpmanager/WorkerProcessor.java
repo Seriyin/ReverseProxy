@@ -5,10 +5,14 @@
  */
 package reverseproxy.udpmanager;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import reverseproxy.PriorityData;
 import reverseproxy.StateManager;
 
@@ -35,6 +39,7 @@ public class WorkerProcessor implements Runnable
         PriorityData = new PriorityData(ThreadData.getAddress());
         ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
         ConnectionPriorityMap.add(PriorityData);
+        CurrentPacket = null;
     }
 
     @Override
@@ -65,7 +70,6 @@ public class WorkerProcessor implements Runnable
         {
             System.err.println(e.getMessage());
         }
-        killAssociatedServer();
     }
 
     /**
@@ -73,20 +77,15 @@ public class WorkerProcessor implements Runnable
      * timestamping at the entrance of each packet. Need to count packet loss
      * and discard expired packets (if they are from previous windows). Need
      * to keep a current window counter as well.
+     * If it's still a new thread, check the packet window for rogue Server.
+     * If it finds a rogue Server politely ask it to reset 3 times.
      */
     private void handlePacket()
-    {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    {        
+//        long timestamp = System.currentTimeMillis();
+        System.out.println("Pacote: " + CurrentPacket.getData());
     }
 
-    /**
-     * Send a kill request. Probably won't make it. Doesn't really matter if it doesn't.
-     * The monitor will timeout and die anyway.
-     */
-    private void killAssociatedServer() 
-    {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 
     /**
      * Need to send a special flag and 4 bytes with the timeout interval in
@@ -96,7 +95,17 @@ public class WorkerProcessor implements Runnable
      */
     private boolean negotiateTimeout() 
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        ByteBuffer buf=ByteBuffer.allocate(5).put((byte)1).putInt(PollTime);
+        CurrentPacket.setData(buf.array());
+        try 
+        {
+            RequestsSocket.send(CurrentPacket);
+        } 
+        catch (IOException ex) 
+        {
+            Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return true;
     }
     
     
