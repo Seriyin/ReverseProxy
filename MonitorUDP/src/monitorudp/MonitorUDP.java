@@ -10,6 +10,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,12 +22,12 @@ public class MonitorUDP implements Runnable
 {
     private final DatagramSocket ServerSocket;
     private final DatagramPacket CurrentPacket;
+    private InetAddress IP;
 
 
     public MonitorUDP(int port,String address) throws IOException 
     {
         ServerSocket=new DatagramSocket(port);
-        InetAddress IP;
         try 
         {
             IP = InetAddress.getByName(address);
@@ -77,6 +78,7 @@ public class MonitorUDP implements Runnable
     
     
     /**
+     *
      * @param args the command line arguments
      */
     public static void main(String[] args) 
@@ -137,7 +139,7 @@ public class MonitorUDP implements Runnable
         }
         else 
         {
-            throw new RuntimeException();
+            throw new RuntimeException("Failure receiving timeout");
         }
     }
 
@@ -147,16 +149,27 @@ public class MonitorUDP implements Runnable
      */
     private void constructPacketHello() 
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        ByteBuffer buf = ByteBuffer.allocate(1).put((byte)0);
+        CurrentPacket.setData(buf.array());
+        CurrentPacket.setAddress(IP);
     }
 
     /**
      * Read from the current packet the timeout if its there, otherwise
-     * @return 
+     * @return timeout time or -1 if no timeout read
      */
     private int getTimeoutPacket() 
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try 
+        {
+            ServerSocket.receive(CurrentPacket);
+        } 
+        catch (IOException ex) 
+        {
+            Logger.getLogger(MonitorUDP.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        ByteBuffer buf = ByteBuffer.allocate(5).get(CurrentPacket.getData());
+        return buf.getInt(1);
     }
 
     /**
@@ -165,6 +178,11 @@ public class MonitorUDP implements Runnable
      */
     private void constructPacketResponse() 
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        ByteBuffer buf = 
+                ByteBuffer.allocate(5)
+                          .put((byte)2)
+                          .putInt((int) System.currentTimeMillis());
+        CurrentPacket.setAddress(IP);
+        CurrentPacket.setData(buf.array());
     }
 }
