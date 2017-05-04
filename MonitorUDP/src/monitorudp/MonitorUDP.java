@@ -37,7 +37,8 @@ public class MonitorUDP implements Runnable
             IP=null;
             System.err.println(e.getMessage());
         }
-        if(IP==null) 
+        
+        if(IP!=null) 
         {
             CurrentPacket = new DatagramPacket(new byte[40],40,IP,port);
         }
@@ -85,7 +86,8 @@ public class MonitorUDP implements Runnable
     {
         try
         {
-            MonitorUDP Monitor = new MonitorUDP(5555,args[1]);
+            MonitorUDP Monitor = new MonitorUDP(5555,"172.26.27.126");
+            
             Monitor.runMonitor();
         }
         catch(IOException | InterruptedException e) 
@@ -113,6 +115,7 @@ public class MonitorUDP implements Runnable
             ServerSocket.setSoTimeout(timeout);
             boolean bPacketReceiveFail=false;
             Thread hello=new Thread(new MonitorUDP(ServerSocket,CurrentPacket));
+            hello.start();
             int count=0;
             while(count<3) 
             {
