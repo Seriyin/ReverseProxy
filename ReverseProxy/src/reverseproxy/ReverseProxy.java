@@ -24,32 +24,13 @@ public class ReverseProxy
     {
         int port = 5555;
         StateManager StateManager = new StateManager(port);
-        try 
-        {
-            UDPServer UDPServer = new UDPServer(port,StateManager);
-            Thread UDPManager = new Thread(UDPServer);
-            UDPManager.start();
-            try {
-                Thread.sleep(80000);
-            } 
-            catch (InterruptedException ex) 
-            {
-                Logger.getLogger(ReverseProxy.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            try 
-            {
-                UDPManager.join(20000);
-            } 
-            catch (InterruptedException ex) 
-            {
-                Logger.getLogger(ReverseProxy.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } 
-        catch (IOException ex) 
-        {
+        UDPServer UDPServer;
+        try {
+            UDPServer = new UDPServer(port,StateManager);
+            UDPServer.run();        
+        } catch (IOException ex) {
             Logger.getLogger(ReverseProxy.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
     }
     
 }

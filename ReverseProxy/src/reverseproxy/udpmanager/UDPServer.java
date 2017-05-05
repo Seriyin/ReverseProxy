@@ -31,7 +31,7 @@ public class UDPServer implements Runnable
     public UDPServer(int port,StateManager StateManager) throws IOException 
     {
         ServerSocket=new DatagramSocket(port);
-        CurrentPacket = new DatagramPacket(new byte[5],5);
+        CurrentPacket = new DatagramPacket(new byte[40],40);
         ThreadDataMap = new HashMap<>(30);
         SocketWorkerFactory = new WorkerFactory(StateManager);
         this.StateManager = StateManager;
@@ -61,11 +61,11 @@ public class UDPServer implements Runnable
     @Override
     public void run() 
     {
+        System.out.println("Begin listen on " + StateManager.getPort());
         while(true) 
         {
             try 
             {
-                System.out.println("Begin listen on " + StateManager.getPort());
                 ServerSocket.receive(CurrentPacket);
             } 
             catch (IOException ex) 
@@ -76,6 +76,7 @@ public class UDPServer implements Runnable
             System.out.println("Received Packet");
             if(ThreadDataMap.containsKey(CurrentPacket.getAddress()))
             {
+                System.out.println("Handling Packet");
                 handleUDPPacket();
             }
             else
@@ -87,21 +88,28 @@ public class UDPServer implements Runnable
 
     private void handleUDPPacket() 
     {
+        InetAddress IP= CurrentPacket.getAddress();
         DatagramPacket clone=new DatagramPacket
                                 (CurrentPacket.getData().clone(),
                                  CurrentPacket.getLength(), 
-                                 CurrentPacket.getAddress(),
+                                 IP,
                                  CurrentPacket.getPort()
                                 );
-        ThreadData currentT = ThreadDataMap.get(CurrentPacket.getAddress());
+        System.out.println("Cloned Packet: " + clone.getAddress());
+        ThreadData currentT = ThreadDataMap.get(IP);
         ArrayBlockingQueue<DatagramPacket> pq = currentT.getPacketQueue();
-        boolean bPostedSucessfully=pq.add(clone);
+        try
+        {
+            pq.add(clone);
+            System.out.println("Top of Queue:" + currentT.getAddress() + " & " + pq.peek() );
+        }
         //Failed to send to queue, must be congestion, wipe the whole queue
         //And keep going.
-        if(!bPostedSucessfully) 
+        catch(IllegalStateException e) 
         {
+            Logger.getLogger(UDPServer.class.getName()).log(Level.SEVERE, null, e);
             currentT.setUnderCongestion(true);
-            pq.clear();
+            pq.clear();      
         }
     }
     

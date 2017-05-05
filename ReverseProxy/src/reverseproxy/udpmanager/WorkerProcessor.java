@@ -8,7 +8,11 @@ package reverseproxy.udpmanager;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -23,6 +27,8 @@ import reverseproxy.StateManager;
 public class WorkerProcessor implements Runnable 
 {
     private final int PollTime;
+    private final int port;
+    private final InetAddress IP;
     private final DatagramSocket RequestsSocket;
     private final ThreadData ThreadData;
     private final ConcurrentSkipListSet ConnectionPriorityMap;
@@ -36,8 +42,10 @@ public class WorkerProcessor implements Runnable
         PollTime=StateManager.getPacketTimeout();
         this.RequestsSocket = RequestsSocket;
         this.ThreadData = ThreadData;
+        IP = ThreadData.getAddress();
         PriorityData = new PriorityData(ThreadData.getAddress());
         ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
+        port = StateManager.getPort();
         ConnectionPriorityMap.add(PriorityData);
         CurrentPacket = null;
     }
@@ -45,24 +53,31 @@ public class WorkerProcessor implements Runnable
     @Override
     public void run() 
     {
+        System.out.println("Processor Alive for :" + IP);
         try 
         {
             if(negotiateTimeout()) 
             {
+                System.out.println("Processor negotiated timeout: " + PollTime);
+                ArrayBlockingQueue<DatagramPacket> PacketQueue= ThreadData.getPacketQueue();
                 int count=0;
                 //Three timeouts means kill server.
                 while(count<3) 
                 {
-                    while((CurrentPacket=ThreadData.getPacketQueue()
-                                                   .poll(PollTime, TimeUnit.SECONDS))!=null) 
+                    CurrentPacket=PacketQueue.poll(PollTime, TimeUnit.SECONDS);
+                    System.out.println("Polled: " + CurrentPacket);
+                    while(CurrentPacket!=null) 
                     {
                         handlePacket();
                         count=0;
+                        CurrentPacket=PacketQueue.poll(PollTime, TimeUnit.SECONDS);
+                        System.out.println("Polled: " + CurrentPacket);
                     }
                     if(!ThreadData.isUnderCongestion()) 
                     {
                         count++;
                     }
+                    System.out.println("Failed Poll");
                 }
             }
         }
@@ -83,7 +98,7 @@ public class WorkerProcessor implements Runnable
     private void handlePacket()
     {        
 //        long timestamp = System.currentTimeMillis();
-        System.out.println("Pacote: " + CurrentPacket.getData());
+        System.out.println("Pacote: " + CurrentPacket.getLength() + " " + Arrays.toString(CurrentPacket.getData()));
     }
 
 
@@ -95,8 +110,12 @@ public class WorkerProcessor implements Runnable
      */
     private boolean negotiateTimeout() 
     {
-        ByteBuffer buf=ByteBuffer.allocate(5).put((byte)1).putInt(PollTime);
-        CurrentPacket.setData(buf.array());
+        ByteBuffer buf=ByteBuffer.allocate(5);
+        buf.put((byte)1);
+        buf.putInt(PollTime);
+        byte bufb[] = buf.array();
+        CurrentPacket = new DatagramPacket(bufb, bufb.length, IP ,port);
+        CurrentPacket.setAddress(ThreadData.getAddress());
         try 
         {
             RequestsSocket.send(CurrentPacket);
