@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +25,7 @@ public class MonitorUDP implements Runnable
     private DatagramPacket CurrentPacket;
     private InetAddress IP;
     private final int port;
+    private int sequence;
 
 
     public MonitorUDP(int port,String address) throws IOException 
@@ -43,7 +44,7 @@ public class MonitorUDP implements Runnable
         
         if(IP!=null) 
         {
-            CurrentPacket = new DatagramPacket(new byte[40],40,IP,port);
+            CurrentPacket = new DatagramPacket(new byte[20],20,IP,port);
         }
         else 
         {
@@ -77,7 +78,7 @@ public class MonitorUDP implements Runnable
                 {
                     Logger.getLogger(MonitorUDP.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                Thread.sleep(2000);
+                Thread.sleep(4000);
             }
         }
         catch(InterruptedException e) {}
@@ -121,6 +122,7 @@ public class MonitorUDP implements Runnable
         int timeout=getTimeoutPacket();
         if (timeout!=-1) 
         {
+            sequence=0;
             ServerSocket.setSoTimeout(timeout);
             boolean bPacketReceiveFail=false;
             Thread hello=new Thread(new MonitorUDP(ServerSocket,port,IP));
@@ -163,10 +165,9 @@ public class MonitorUDP implements Runnable
      */
     private void constructPacketHello() 
     {
-        ByteBuffer buf = ByteBuffer.allocate(1).put((byte)0);
-        CurrentPacket.setData(buf.array());
-        CurrentPacket.setLength(1);
+        ByteBuffer.wrap(CurrentPacket.getData()).put(0,(byte)0);
         CurrentPacket.setAddress(IP);
+        System.out.println("Packet :" + Arrays.toString(CurrentPacket.getData()));
     }
 
     /**
@@ -175,16 +176,36 @@ public class MonitorUDP implements Runnable
      */
     private int getTimeoutPacket() 
     {
-        try 
+        int count=0;
+        while(count<3) 
         {
-            ServerSocket.receive(CurrentPacket);
-        } 
-        catch (IOException ex) 
-        {
-            Logger.getLogger(MonitorUDP.class.getName()).log(Level.SEVERE, null, ex);
+            try 
+            {
+                ServerSocket.receive(CurrentPacket);
+            }
+            catch (IOException ex) 
+            {
+                Logger.getLogger(MonitorUDP.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if(CurrentPacket.getData()[0]!=(byte)1) 
+            {
+                System.out.println("Got THIS : " + Arrays.toString(CurrentPacket.getData()));
+                count++;
+            }
+            else
+            {
+                count=400;
+            }
         }
-        ByteBuffer buf = ByteBuffer.allocate(5).get(CurrentPacket.getData());
-        return buf.getInt(1);
+        if(count==400) 
+        {
+            ByteBuffer buf = ByteBuffer.wrap(CurrentPacket.getData());
+            return buf.getInt(1)*1000;
+        }
+        else 
+        {
+            return -1;
+        }
     }
 
     /**
@@ -193,12 +214,13 @@ public class MonitorUDP implements Runnable
      */
     private void constructPacketResponse() 
     {
+        sequence++;
         ByteBuffer buf = 
-                ByteBuffer.allocate(9)
-                          .put((byte)2);
-        long timestamp = System.currentTimeMillis();
+                ByteBuffer.wrap(CurrentPacket.getData())
+                          .put(0,(byte)3)
+                          .putInt(8,sequence);
+        long timestamp = buf.getLong(1);
         System.out.println("Stamp : " + timestamp);
-        buf.putLong(timestamp);
         CurrentPacket.setAddress(IP);
         CurrentPacket.setData(buf.array());
         System.out.println("Current :" + CurrentPacket.getAddress());
