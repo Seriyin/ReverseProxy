@@ -34,6 +34,7 @@ public class WorkerProcessor implements Runnable
     private final ConcurrentSkipListSet ConnectionPriorityMap;
     private DatagramPacket CurrentPacket;
     private final PriorityData PriorityData;
+    private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
     
     public WorkerProcessor(DatagramSocket RequestsSocket, 
                            ThreadData ThreadData,
@@ -43,6 +44,7 @@ public class WorkerProcessor implements Runnable
         this.RequestsSocket = RequestsSocket;
         this.ThreadData = ThreadData;
         IP = ThreadData.getAddress();
+        PacketQueue = ThreadData.getPacketQueue();
         PriorityData = new PriorityData(ThreadData.getAddress());
         ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
         port = StateManager.getPort();
@@ -59,19 +61,15 @@ public class WorkerProcessor implements Runnable
             if(negotiateTimeout()) 
             {
                 System.out.println("Processor negotiated timeout: " + PollTime);
-                ArrayBlockingQueue<DatagramPacket> PacketQueue= ThreadData.getPacketQueue();
                 int count=0;
                 //Three timeouts means kill server.
                 while(count<3) 
                 {
-                    CurrentPacket=PacketQueue.poll(PollTime, TimeUnit.SECONDS);
-                    System.out.println("Polled: " + CurrentPacket);
-                    while(CurrentPacket!=null) 
+                    while((CurrentPacket=PacketQueue.poll(PollTime, TimeUnit.SECONDS))!=null) 
                     {
                         handlePacket();
                         count=0;
-                        CurrentPacket=PacketQueue.poll(PollTime, TimeUnit.SECONDS);
-                        System.out.println("Polled: " + CurrentPacket);
+                        System.out.println("Polled: " + Arrays.toString(CurrentPacket.getData()));
                     }
                     if(!ThreadData.isUnderCongestion()) 
                     {
@@ -79,6 +77,7 @@ public class WorkerProcessor implements Runnable
                     }
                     System.out.println("Failed Poll");
                 }
+                ThreadData.getProberThread().cancel(true);
             }
         }
         catch(InterruptedException e) 
@@ -92,12 +91,10 @@ public class WorkerProcessor implements Runnable
      * timestamping at the entrance of each packet. Need to count packet loss
      * and discard expired packets (if they are from previous windows). Need
      * to keep a current window counter as well.
-     * If it's still a new thread, check the packet window for rogue Server.
-     * If it finds a rogue Server politely ask it to reset 3 times.
      */
     private void handlePacket()
-    {        
-//        long timestamp = System.currentTimeMillis();
+    {
+        long timestamp = System.currentTimeMillis();
         System.out.println("Pacote: " + CurrentPacket.getLength() + " " + Arrays.toString(CurrentPacket.getData()));
     }
 
@@ -110,21 +107,47 @@ public class WorkerProcessor implements Runnable
      */
     private boolean negotiateTimeout() 
     {
-        ByteBuffer buf=ByteBuffer.allocate(5);
-        buf.put((byte)1);
-        buf.putInt(PollTime);
-        byte bufb[] = buf.array();
-        CurrentPacket = new DatagramPacket(bufb, bufb.length, IP ,port);
-        CurrentPacket.setAddress(ThreadData.getAddress());
-        try 
+        int count=0;
+        boolean bTimeoutNegotiated=false;
+        while(count<3) 
         {
-            RequestsSocket.send(CurrentPacket);
-        } 
-        catch (IOException ex) 
-        {
-            Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
+            ByteBuffer buf=ByteBuffer.allocate(16);
+            buf.put((byte)1);
+            buf.putInt(PollTime);
+            byte bufb[] = buf.array();
+            CurrentPacket = new DatagramPacket(bufb, bufb.length, IP ,port);
+            try 
+            {
+                RequestsSocket.send(CurrentPacket);
+                try 
+                {
+                    CurrentPacket=PacketQueue.poll(PollTime, TimeUnit.SECONDS);
+                } 
+                catch (InterruptedException ex) 
+                {
+                    Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
+                    return false;
+                }
+                //First Packet is an hello packet
+                if(CurrentPacket!=null) 
+                {
+                    count=400;
+                    bTimeoutNegotiated=true;
+                    ThreadData.getProberThreadHandle().interrupt();
+                    handlePacket();
+                }
+                else
+                {
+                    count++;
+                }
+            } 
+            catch (IOException ex) 
+            {
+                Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
+                count++;
+            }
         }
-        return true;
+        return bTimeoutNegotiated;
     }
     
     

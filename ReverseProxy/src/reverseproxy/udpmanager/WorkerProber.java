@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import reverseproxy.StateManager;
 
 /**
@@ -19,37 +22,61 @@ public class WorkerProber implements Runnable
 {
     private final DatagramSocket UDPSocket;
     private final DatagramPacket ProbePacket;
+    private final ByteBuffer bb;
+    private final InetAddress ServerIP;
+    private final ThreadData ThreadData;
 
     public WorkerProber(ThreadData ThreadData, DatagramSocket DatagramSocket,
                         StateManager StateManager) 
     {
-        InetAddress ServerIP = ThreadData.getAddress();
+        this.ThreadData = ThreadData;
+        ServerIP = ThreadData.getAddress();
         UDPSocket = DatagramSocket;
-        byte[] probe = new byte[1];
-        probe[0] = 2;
-        ProbePacket = new DatagramPacket(probe,1,ServerIP,StateManager.getPort());
+        bb = ByteBuffer.allocate(9).put((byte)2);
+        ProbePacket = new DatagramPacket(bb.array(),
+                                         bb.capacity(),
+                                         ServerIP,
+                                         StateManager.getPort());
     }
 
     @Override
     public void run() 
     {
-        try
+        ThreadData.registerProberThreadHandle(Thread.currentThread());
+        boolean bWoken=false;
+        try 
         {
-            while(true) 
+            //Sleep during negotiation
+            Thread.sleep(30000);
+        } 
+        catch (InterruptedException ex) 
+        {
+            bWoken=true;
+        }
+        if (bWoken) 
+        {
+            try
             {
-                Thread.sleep(2000);
-                try 
+                while(true) 
                 {
-                    UDPSocket.send(ProbePacket);
-                } 
-                catch (IOException ex) 
-                {
-                    System.err.println(ex.getMessage());
+                    Thread.sleep(2000);
+                    try 
+                    {
+                        long timestamp = System.currentTimeMillis();
+                        System.out.println("Stamp for " + ServerIP + " : " + timestamp);
+                        bb.putLong(1, timestamp);
+                        UDPSocket.send(ProbePacket);
+                    }  
+                    catch (IOException ex) 
+                    {
+                        System.err.println(ex.getMessage());
+                    }
                 }
             }
-        }
-        catch(InterruptedException e) 
-        {
+            catch(InterruptedException e) 
+            {
+                System.out.println("Prober for " + ServerIP +  " exiting");
+            }
         }
     }
     

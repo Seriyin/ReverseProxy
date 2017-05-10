@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -46,14 +47,11 @@ public class UDPServer implements Runnable
     {
         InetAddress addr=CurrentPacket.getAddress();
         ArrayBlockingQueue<DatagramPacket> q = new ArrayBlockingQueue<>(50);
-        q.add(new DatagramPacket(CurrentPacket.getData().clone(),
-                                 CurrentPacket.getLength(), 
-                                 addr,
-                                 CurrentPacket.getPort()));
+        //First Packet is always an hello, drop it
         ThreadData t=new ThreadData(q,false,addr);
-        t.registerProcessorThreadHandle(SocketWorkerFactory.buildSocketWorker
+        t.registerProcessorThread(SocketWorkerFactory.buildSocketWorker
                                                    (t,ServerSocket,StateManager));
-        t.registerProberThreadHandle(SocketWorkerFactory.buildSocketProber
+        t.registerProberThread(SocketWorkerFactory.buildSocketProber
                                                    (t,ServerSocket,StateManager));
         ThreadDataMap.put(CurrentPacket.getAddress(),t);
     }
@@ -61,27 +59,36 @@ public class UDPServer implements Runnable
     @Override
     public void run() 
     {
+        try 
+        {
+            ServerSocket.setSoTimeout(4000);
+        } 
+        catch (SocketException ex) 
+        {
+            Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
+        }
         System.out.println("Begin listen on " + StateManager.getPort());
         while(true) 
         {
             try 
             {
                 ServerSocket.receive(CurrentPacket);
-            } 
+                System.out.println("Received Packet");
+                if(ThreadDataMap.containsKey(CurrentPacket.getAddress()))
+                {
+                    System.out.println("Handling Packet");
+                    handleUDPPacket();
+                }
+                else
+                {
+                    buildSocketWorkerForIP();
+                }
+            }
+            catch(SocketException ex) {}
             catch (IOException ex) 
             {
                 //Should handle carefully packet corruption
                 Logger.getLogger(UDPServer.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            System.out.println("Received Packet");
-            if(ThreadDataMap.containsKey(CurrentPacket.getAddress()))
-            {
-                System.out.println("Handling Packet");
-                handleUDPPacket();
-            }
-            else
-            {
-                buildSocketWorkerForIP();
             }
         }
     }
