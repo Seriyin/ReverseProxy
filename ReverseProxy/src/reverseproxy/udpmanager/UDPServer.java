@@ -29,10 +29,10 @@ public class UDPServer implements Runnable
     private final WorkerFactory SocketWorkerFactory;
     private final StateManager StateManager;
     
-    public UDPServer(int port,StateManager StateManager) throws IOException 
+    public UDPServer(StateManager StateManager) throws IOException 
     {
-        ServerSocket=new DatagramSocket(port);
-        CurrentPacket = new DatagramPacket(new byte[40],40);
+        ServerSocket=new DatagramSocket(StateManager.getUDPPort());
+        CurrentPacket = new DatagramPacket(new byte[20],20);
         ThreadDataMap = new HashMap<>(30);
         SocketWorkerFactory = new WorkerFactory(StateManager);
         this.StateManager = StateManager;
@@ -42,6 +42,8 @@ public class UDPServer implements Runnable
     
     /**
      * Asks the worker factory to build a socket worker.
+     * This first packet that springs up the thread should always be a discardable
+     * hello packet.
      */    
     private void buildSocketWorkerForIP() 
     {
@@ -67,7 +69,7 @@ public class UDPServer implements Runnable
         {
             Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        System.out.println("Begin listen on " + StateManager.getPort());
+        System.out.println("Begin listen on " + StateManager.getUDPPort());
         while(true) 
         {
             try 
@@ -93,6 +95,10 @@ public class UDPServer implements Runnable
         }
     }
 
+    /**
+     * Stores the received packet in the queue associated with that packets' IP and
+     * subsequently the underlying server.
+     */
     private void handleUDPPacket() 
     {
         InetAddress IP= CurrentPacket.getAddress();
@@ -112,7 +118,7 @@ public class UDPServer implements Runnable
         }
         //Failed to send to queue, must be congestion, wipe the whole queue
         //And keep going.
-        catch(IllegalStateException e) 
+        catch(IllegalStateException e)
         {
             Logger.getLogger(UDPServer.class.getName()).log(Level.SEVERE, null, e);
             currentT.setUnderCongestion(true);

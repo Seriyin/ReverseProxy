@@ -10,8 +10,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import reverseproxy.StateManager;
 
 /**
@@ -36,7 +34,7 @@ public class WorkerProber implements Runnable
         ProbePacket = new DatagramPacket(bb.array(),
                                          bb.capacity(),
                                          ServerIP,
-                                         StateManager.getPort());
+                                         StateManager.getUDPPort());
     }
 
     @Override

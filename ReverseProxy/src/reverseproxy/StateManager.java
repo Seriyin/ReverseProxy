@@ -9,7 +9,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -22,13 +25,15 @@ import javax.json.JsonReader;
 public final class StateManager 
 {
 
-    private final int port;
+    private final int UDPPort;
+    private final int TCPPort;
     private int MaxServerConnections;
+    private int MaxTCPConnections;
     private int WindowSize;
     private int PacketTimeout;
-    private final ConcurrentSkipListSet<PriorityData> ConnectionPriorityMap;
+    private final ConcurrentLinkedQueue<PriorityData> ConnectionPriorityMap;
     
-    public StateManager(int port) 
+    public StateManager(int UDPPort,int TCPPort) 
     {
         JsonReader jsr;
         try 
@@ -44,17 +49,18 @@ public final class StateManager
             MaxServerConnections = jso.getJsonNumber("MaxServerConnections").intValueExact();
             WindowSize = jso.getJsonNumber("WindowSize").intValueExact();
             PacketTimeout = jso.getJsonNumber("PacketTimeout").intValueExact();
+            MaxTCPConnections = jso.getJsonNumber("MaxTCPConnections").intValueExact();
         } 
         catch (Exception ex) 
         {
-            MaxServerConnections=1024;
+            MaxServerConnections=128;
             WindowSize=30;
-            PacketTimeout=3;
+            PacketTimeout=5;
+            MaxTCPConnections=2048;
         }
-        this.port = port;
-        ConnectionPriorityMap = 
-                new ConcurrentSkipListSet<>(
-                        Comparator.comparing(PriorityData::calculatePriority));
+        this.UDPPort = UDPPort;
+        this.TCPPort = TCPPort;
+        ConnectionPriorityMap = new ConcurrentLinkedQueue<>();
     }
 
     public int getMaxServerConnections() 
@@ -72,14 +78,24 @@ public final class StateManager
         return PacketTimeout;
     }
 
-    public ConcurrentSkipListSet<PriorityData> getConnectionPriorityMap() 
+    public ConcurrentLinkedQueue<PriorityData> getConnectionPriorityMap() 
     {
         return ConnectionPriorityMap;
     }
 
-    public int getPort() 
+    public int getUDPPort() 
     {
-        return port;
+        return UDPPort;
+    }
+
+    public int getTCPPort() 
+    {
+        return TCPPort;
+    }
+
+    public int getMaxTCPConnections() 
+    {
+        return MaxTCPConnections;
     }
 
 }

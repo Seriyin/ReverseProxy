@@ -8,6 +8,7 @@ package reverseproxy;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import reverseproxy.tcpmanager.TCPServer;
 import reverseproxy.udpmanager.UDPServer;
 
 /**
@@ -18,17 +19,25 @@ public class ReverseProxy
 {
 
     /**
-     * For now just run UDPManager for 80 + 20 seconds.
+     * For now just run UDPServer.
      */
     public static void main(String[] args) 
     {
-        int port = 5555;
-        StateManager StateManager = new StateManager(port);
+        int UDPPort = 5555;
+        int TCPPort = 80;
+        StateManager StateManager = new StateManager(UDPPort,TCPPort);
         UDPServer UDPServer;
-        try {
-            UDPServer = new UDPServer(port,StateManager);
-            UDPServer.run();        
-        } catch (IOException ex) {
+        TCPServer TCPServer;
+        try 
+        {
+            UDPServer = new UDPServer(StateManager);
+            Thread UDPManager = new Thread(UDPServer);
+            UDPManager.start();
+            TCPServer = new TCPServer(StateManager);
+            TCPServer.run();
+        } 
+        catch (IOException ex) 
+        {
             Logger.getLogger(ReverseProxy.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

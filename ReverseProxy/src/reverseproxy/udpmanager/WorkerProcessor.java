@@ -9,11 +9,10 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +20,9 @@ import reverseproxy.PriorityData;
 import reverseproxy.StateManager;
 
 /**
- *
+ * WorkerProcessor exclusively polls its queue of packets to negotiate
+ * a timeout and update priority data for a single IP address associated
+ * with one single server.
  * @author Andre, Matias, Nuno
  */
 public class WorkerProcessor implements Runnable 
@@ -31,7 +32,7 @@ public class WorkerProcessor implements Runnable
     private final InetAddress IP;
     private final DatagramSocket RequestsSocket;
     private final ThreadData ThreadData;
-    private final ConcurrentSkipListSet ConnectionPriorityMap;
+    private final ConcurrentLinkedQueue<PriorityData> ConnectionPriorityMap;
     private DatagramPacket CurrentPacket;
     private final PriorityData PriorityData;
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
@@ -47,7 +48,7 @@ public class WorkerProcessor implements Runnable
         PacketQueue = ThreadData.getPacketQueue();
         PriorityData = new PriorityData(ThreadData.getAddress());
         ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
-        port = StateManager.getPort();
+        port = StateManager.getUDPPort();
         ConnectionPriorityMap.add(PriorityData);
         CurrentPacket = null;
     }
@@ -58,7 +59,7 @@ public class WorkerProcessor implements Runnable
         System.out.println("Processor Alive for :" + IP);
         try 
         {
-            if(negotiateTimeout()) 
+            if(negotiateTimeout())
             {
                 System.out.println("Processor negotiated timeout: " + PollTime);
                 int count=0;
@@ -100,8 +101,8 @@ public class WorkerProcessor implements Runnable
 
 
     /**
-     * Need to send a special flag and 4 bytes with the timeout interval in
-     * milliseconds read from the JSON. Should try 3 times, if no ACK comes back
+     * Sends a special flag and 4 bytes with the timeout interval in
+     * seconds read from the JSON. Should try 3 times, if no ACK comes back
      * fail and return false.
      * @return whether the timeout was negotiated (true) or forgotten (false)
      */
