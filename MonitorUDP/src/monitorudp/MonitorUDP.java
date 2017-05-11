@@ -140,7 +140,7 @@ public class MonitorUDP implements Runnable
                     System.err.println(e.getMessage());
                     bPacketReceiveFail = true;
                 }
-                if (!bPacketReceiveFail) 
+                if (!bPacketReceiveFail && CurrentPacket.getData()[0]==2) 
                 {
                     constructPacketResponse();
                     ServerSocket.send(CurrentPacket);
