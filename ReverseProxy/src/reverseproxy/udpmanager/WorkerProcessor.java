@@ -11,7 +11,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,8 @@ public class WorkerProcessor implements Runnable
     private DatagramPacket CurrentPacket;
     private final PriorityData PriorityData;
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
+    private ArrayList<Long> timeStampWindow;
+    private int windowCounter;
     
     public WorkerProcessor(DatagramSocket RequestsSocket, 
                            ThreadData ThreadData,
@@ -50,6 +55,9 @@ public class WorkerProcessor implements Runnable
         port = StateManager.getPort();
         ConnectionPriorityMap.add(PriorityData);
         CurrentPacket = null;
+        timeStampWindow = new ArrayList<>();
+        windowCounter = 0;
+        
     }
 
     @Override
@@ -96,6 +104,30 @@ public class WorkerProcessor implements Runnable
     {
         long timestamp = System.currentTimeMillis();
         System.out.println("Pacote: " + CurrentPacket.getLength() + " " + Arrays.toString(CurrentPacket.getData()));
+        
+        if (CurrentPacket.getData()[0] == 2)
+        {
+            long rTT;
+            long packetTimestamp = ByteBuffer.wrap(CurrentPacket.getData()).getLong(1);
+            int sequenceNumber = ByteBuffer.wrap(CurrentPacket.getData()).getInt();
+            int window = sequenceNumber/20;
+            
+            if (window == windowCounter)
+            {
+                timeStampWindow.add(packetTimestamp);
+            }
+            else if (window > windowCounter)
+            {
+                int lost = 30-timeStampWindow.size();
+                //int median = timeStampWindow.stream();
+                //updatewindow
+                timeStampWindow.clear();
+                this.windowCounter = window;
+                timeStampWindow.add(packetTimestamp);
+            }
+            
+            
+        }
     }
 
 
