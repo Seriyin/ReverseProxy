@@ -120,8 +120,12 @@ public class WorkerProcessor implements Runnable
             else if (window > windowCounter)
             {
                 int lost = 30-timeStampWindow.size();
-                //int median = timeStampWindow.stream();
-                //updatewindow
+                long sum;
+                for (int i=0; i< timeStampWindow.size(); i++) {
+                    sum += (timeStampWindow.get(i))^2;
+                }
+                int mean = sqrt(sum/timeStampWindow.size());
+                //update database
                 timeStampWindow.clear();
                 this.windowCounter = window;
                 timeStampWindow.add(packetTimestamp);
