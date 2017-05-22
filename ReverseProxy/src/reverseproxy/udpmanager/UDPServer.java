@@ -10,9 +10,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import reverseproxy.StateManager;
@@ -33,7 +33,7 @@ public class UDPServer implements Runnable
     {
         ServerSocket=new DatagramSocket(StateManager.getUDPPort());
         CurrentPacket = new DatagramPacket(new byte[20],20);
-        ThreadDataMap = new HashMap<>(30);
+        ThreadDataMap = new ConcurrentHashMap<>(30);
         SocketWorkerFactory = new WorkerFactory(StateManager);
         this.StateManager = StateManager;
     }
@@ -52,7 +52,8 @@ public class UDPServer implements Runnable
         //First Packet is always an hello, drop it
         ThreadData t=new ThreadData(q,false,addr);
         t.registerProcessorThread(SocketWorkerFactory.buildSocketWorker
-                                                   (t,ServerSocket,StateManager));
+                                                   (t,ServerSocket,
+                                                    StateManager, ThreadDataMap));
         t.registerProberThread(SocketWorkerFactory.buildSocketProber
                                                    (t,ServerSocket,StateManager));
         ThreadDataMap.put(CurrentPacket.getAddress(),t);

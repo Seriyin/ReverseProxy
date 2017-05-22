@@ -12,8 +12,7 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -39,12 +38,16 @@ public class WorkerProcessor implements Runnable
     private DatagramPacket CurrentPacket;
     private final PriorityData PriorityData;
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
-    private ArrayList<Long> timeStampWindow;
+    private final Map<InetAddress,ThreadData> ThreadDataMap;
+    private final ArrayList<Long> timeStampWindow;
+    private int windowSize;
     private int windowCounter;
+    private int windowTimeouts;
     
     public WorkerProcessor(DatagramSocket RequestsSocket, 
                            ThreadData ThreadData,
-                           StateManager StateManager) 
+                           StateManager StateManager,
+                           Map<InetAddress,ThreadData> ThreadDataMap) 
     {
         PollTime=StateManager.getPacketTimeout();
         this.RequestsSocket = RequestsSocket;
@@ -54,11 +57,13 @@ public class WorkerProcessor implements Runnable
         PriorityData = new PriorityData(ThreadData.getAddress());
         ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
         port = StateManager.getUDPPort();
+        windowSize= StateManager.getWindowSize();
         ConnectionPriorityMap.add(PriorityData);
         CurrentPacket = null;
         timeStampWindow = new ArrayList<>();
         windowCounter = 0;
-        
+        windowTimeouts = 0;
+        this.ThreadDataMap = ThreadDataMap;
     }
 
     @Override
@@ -83,6 +88,7 @@ public class WorkerProcessor implements Runnable
                     if(!ThreadData.isUnderCongestion()) 
                     {
                         count++;
+                        windowTimeouts++;
                     }
                     System.out.println("Failed Poll");
                 }
@@ -93,6 +99,7 @@ public class WorkerProcessor implements Runnable
         {
             System.err.println(e.getMessage());
         }
+        ThreadDataMap.remove(IP);
     }
 
     /**
@@ -111,27 +118,29 @@ public class WorkerProcessor implements Runnable
             long rTT;
             long packetTimestamp = ByteBuffer.wrap(CurrentPacket.getData()).getLong(1);
             int sequenceNumber = ByteBuffer.wrap(CurrentPacket.getData()).getInt();
-            int window = sequenceNumber/20;
+            int window = sequenceNumber/windowSize;
+            timestamp -= packetTimestamp;
             
             if (window == windowCounter)
             {
-                timeStampWindow.add(packetTimestamp);
+                timeStampWindow.add(timestamp);
             }
             else if (window > windowCounter)
             {
-                int lost = 30-timeStampWindow.size();
-                long sum;
+                int lost = windowSize-timeStampWindow.size();
+                long sum=0;
                 for (int i=0; i< timeStampWindow.size(); i++) {
                     sum += (timeStampWindow.get(i))^2;
                 }
-                int mean = sqrt(sum/timeStampWindow.size());
+                int mean;
+                mean = (int)Math.sqrt(sum/timeStampWindow.size())/1000;
                 //update database
+                PriorityData.updateWindow(mean, lost, windowTimeouts);
                 timeStampWindow.clear();
                 this.windowCounter = window;
-                timeStampWindow.add(packetTimestamp);
+                timeStampWindow.add(timestamp);
+                windowTimeouts=0;
             }
-            
-            
         }
     }
 

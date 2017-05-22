@@ -34,11 +34,13 @@ public class WorkerFactory
     
     public Future<?> buildSocketWorker(ThreadData ThreadData,
                                        DatagramSocket RequestsSocket,
-                                       StateManager StateManager) 
+                                       StateManager StateManager,
+                                       Map<InetAddress,ThreadData> ThreadDataMap) 
     {
         return FixedThreadPool.submit(new WorkerProcessor(RequestsSocket,
                                                           ThreadData,
-                                                          StateManager));
+                                                          StateManager,
+                                                          ThreadDataMap));
     }
     
     public Future<?> buildSocketProber(ThreadData ThreadData,

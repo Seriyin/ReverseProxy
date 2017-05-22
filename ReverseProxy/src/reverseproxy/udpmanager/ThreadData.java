@@ -22,7 +22,7 @@ public class ThreadData
     private Future<?> ProcessorThread;
     private Future<?> ProberThread;
     private Thread ProberThreadHandle;
-    private InetAddress associatedAddress;
+    private final InetAddress associatedAddress;
     
     ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b,InetAddress addr) 
     {
