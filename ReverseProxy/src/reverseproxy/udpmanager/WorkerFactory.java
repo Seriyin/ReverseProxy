@@ -19,7 +19,7 @@ import reverseproxy.StateManager;
  * for a given number of servers N.
  * Returns a future for thread interrupting
  *
- * Future.cancel(true) launches a thread interrupt.
+ * Future.cancel(true) launches a single thread interrupt.
  *
  * @author Andre, Matias, Nuno
  */

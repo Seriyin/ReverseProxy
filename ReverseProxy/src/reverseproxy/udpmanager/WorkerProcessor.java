@@ -25,14 +25,16 @@ import reverseproxy.StateManager;
  * WorkerProcessor exclusively polls its queue of packets to negotiate
  * a timeout and update priority data for a single IP address associated
  * with one single server.
+ * It will on startup, negotiate a timeout, after which it will interrupt
+ * a sleeping prober to start probing.
  * @author Andre, Matias, Nuno
  */
 public class WorkerProcessor implements Runnable 
 {
+    private final DatagramSocket RequestsSocket;
     private final int PollTime;
     private final int port;
     private final InetAddress IP;
-    private final DatagramSocket RequestsSocket;
     private final ThreadData ThreadData;
     private final ConcurrentLinkedQueue<PriorityData> ConnectionPriorityMap;
     private DatagramPacket CurrentPacket;
@@ -40,17 +42,28 @@ public class WorkerProcessor implements Runnable
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
     private final Map<InetAddress,ThreadData> ThreadDataMap;
     private final ArrayList<Long> timeStampWindow;
-    private int windowSize;
+    private final int windowSize;
     private int windowCounter;
     private int windowTimeouts;
     
-    public WorkerProcessor(DatagramSocket RequestsSocket, 
+    
+    /**
+     * Constructs a worker dedicated to reading probe response packets
+     * and using them to calculate and update the various parameters
+     * involved in the priority calculation.
+     * @param RequestsSocket the UDP socket through which to send packets.
+     * @param ThreadData this thread and prober's thread handles + backend IP
+     * @param StateManager used to retrieve configurable info read from JSON.
+     * @param ThreadDataMap the Map of ThreadDatas for each backend IP to allow
+     * deletion when a thread times out.
+     */
+    public WorkerProcessor(DatagramSocket RequestsSocket,
                            ThreadData ThreadData,
                            StateManager StateManager,
                            Map<InetAddress,ThreadData> ThreadDataMap) 
     {
-        PollTime=StateManager.getPacketTimeout();
         this.RequestsSocket = RequestsSocket;
+        PollTime=StateManager.getPacketTimeout();
         this.ThreadData = ThreadData;
         IP = ThreadData.getAddress();
         PacketQueue = ThreadData.getPacketQueue();
@@ -90,6 +103,10 @@ public class WorkerProcessor implements Runnable
                         count++;
                         windowTimeouts++;
                     }
+                    else 
+                    {
+                        ThreadData.setUnderCongestion(false);
+                    }
                     System.out.println("Failed Poll");
                 }
                 ThreadData.getProberThread().cancel(true);
@@ -103,10 +120,11 @@ public class WorkerProcessor implements Runnable
     }
 
     /**
-     * Treat packet windows here. Need to accumulate RTTs, which requires
-     * timestamping at the entrance of each packet. Need to count packet loss
-     * and discard expired packets (if they are from previous windows). Need
-     * to keep a current window counter as well.
+     * Treatment of packet windows here. Accumulate RTTs, which requires
+     * timestamping at the entrance of each packet. Counts packet loss
+     * and discard expired packets (if they are from previous windows). 
+     * Keeps a current window counter, and on a new window, 
+     * updates the priority data.
      */
     private void handlePacket()
     {
@@ -129,7 +147,8 @@ public class WorkerProcessor implements Runnable
             {
                 int lost = windowSize-timeStampWindow.size();
                 long sum=0;
-                for (int i=0; i< timeStampWindow.size(); i++) {
+                for (int i=0; i< timeStampWindow.size(); i++) 
+                {
                     sum += (timeStampWindow.get(i))^2;
                 }
                 int mean;
@@ -147,8 +166,8 @@ public class WorkerProcessor implements Runnable
 
     /**
      * Sends a special flag and 4 bytes with the timeout interval in
-     * seconds read from the JSON. Should try 3 times, if no ACK comes back
-     * fail and return false.
+     * seconds read from the JSON. Tries 3 times, if no ACK(hello packet) 
+     * comes back fail and return false.
      * @return whether the timeout was negotiated (true) or forgotten (false)
      */
     private boolean negotiateTimeout() 

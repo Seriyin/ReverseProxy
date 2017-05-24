@@ -9,17 +9,22 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import javax.json.Json;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 /**
- *
+ * StateManager contains all globally(both to UDP and TCP managers) accessible
+ * variables, which include the UDP and TCP ports, all the available JSON 
+ * configurable parameters, read from config.json and a PriorityData Table.
+ * 
+ * The available configurable parameters are:
+ *  MaxServerConnections - the maximum allowed backend servers.
+ *  MaxTCPConnections - the maximum allowed host TCP connections.
+ *  WindowSize - size of the packet window to consider till a priority update.
+ *  PacketTimeout - timeout time for a packet in seconds.
  * @author Andre, Matias, Nuno
  */
 public final class StateManager 
@@ -46,10 +51,42 @@ public final class StateManager
                                         new File("./config.json")))));
             JsonObject jso;
             jso=jsr.readObject();
-            MaxServerConnections = jso.getJsonNumber("MaxServerConnections").intValueExact();
-            WindowSize = jso.getJsonNumber("WindowSize").intValueExact();
-            PacketTimeout = jso.getJsonNumber("PacketTimeout").intValueExact();
-            MaxTCPConnections = jso.getJsonNumber("MaxTCPConnections").intValueExact();
+            JsonNumber jsn = jso.getJsonNumber("MaxServerConnections");
+            if(jsn != null) 
+            {
+                MaxServerConnections = jsn.intValueExact();
+            }
+            else 
+            {
+                MaxServerConnections = 128;
+            }
+            jsn = jso.getJsonNumber("WindowSize");
+            if(jsn != null)
+            {    
+                WindowSize = jsn.intValueExact();
+            }
+            else
+            {
+                WindowSize=30;
+            }
+            jsn = jso.getJsonNumber("PacketTimeout");
+            if(jsn != null)
+            {    
+                PacketTimeout = jsn.intValueExact();
+            }
+            else
+            {
+                PacketTimeout = 5;
+            }
+            jsn = jso.getJsonNumber("MaxTCPConnections");            
+            if(jsn != null)
+            {    
+                MaxTCPConnections = jsn.intValueExact();
+            }
+            else
+            {
+                MaxTCPConnections = 2048;
+            }
         } 
         catch (Exception ex) 
         {

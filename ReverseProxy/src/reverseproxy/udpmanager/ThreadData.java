@@ -24,10 +24,16 @@ public class ThreadData
     private Thread ProberThreadHandle;
     private final InetAddress associatedAddress;
     
-    ThreadData(ArrayBlockingQueue<DatagramPacket> q, boolean b,InetAddress addr) 
+    /**
+     * Constructs a ThreadData with a packet queue and backend IP.
+     * It leaves all thread data in unspecified state.
+     * @param q the PacketQueue of a given IP
+     * @param addr the backend IP
+     */
+    ThreadData(ArrayBlockingQueue<DatagramPacket> q, InetAddress addr) 
     {
         PacketQueue=q;
-        bUnderCongestion=b;
+        bUnderCongestion=false;
         associatedAddress=addr;
     }
 
@@ -44,7 +50,8 @@ public class ThreadData
     /**
      *  Congestion is needed only when the UDP server lags.
      *  Threads on wake-up might find they have no packets to read
-     *  not due to lack of receiving, but rather due to dropped packets.
+     *  not due to lack of receiving, but rather due to dropped packets from
+     *  emptying a queue when it's full.
      *  In that case, congestion is set to indicate packets have been dropped.
      * @return indicates whether the packet queue is under congestion.
      */

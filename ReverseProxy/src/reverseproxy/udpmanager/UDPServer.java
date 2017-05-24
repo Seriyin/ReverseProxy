@@ -50,7 +50,7 @@ public class UDPServer implements Runnable
         InetAddress addr=CurrentPacket.getAddress();
         ArrayBlockingQueue<DatagramPacket> q = new ArrayBlockingQueue<>(50);
         //First Packet is always an hello, drop it
-        ThreadData t=new ThreadData(q,false,addr);
+        ThreadData t=new ThreadData(q,addr);
         t.registerProcessorThread(SocketWorkerFactory.buildSocketWorker
                                                    (t,ServerSocket,
                                                     StateManager, ThreadDataMap));

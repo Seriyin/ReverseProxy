@@ -12,14 +12,14 @@ import reverseproxy.tcpmanager.TCPServer;
 import reverseproxy.udpmanager.UDPServer;
 
 /**
- *
+ * The main class which runs the UDPServer and TCPServer.
  * @author Andre, Matias, Nuno
  */
 public class ReverseProxy 
 {
 
     /**
-     * For now just run UDPServer.
+     * Runs UDPServer and TCPServer.
      */
     public static void main(String[] args) 
     {

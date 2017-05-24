@@ -30,7 +30,6 @@ public class TCPServer implements Runnable
     public TCPServer(StateManager StateManager) throws IOException 
     {
         ServerSocket=new ServerSocket(StateManager.getTCPPort());
-        ExecutorService TaskPool=Executors.newFixedThreadPool(2048);
         SocketWorkerFactory = new WorkerFactory(StateManager);
         this.StateManager=StateManager;
     }

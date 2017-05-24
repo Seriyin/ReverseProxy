@@ -13,7 +13,12 @@ import java.nio.ByteBuffer;
 import reverseproxy.StateManager;
 
 /**
- *
+ * A worker that sends probe requests continually with the send timestamp to a
+ * specific backend identified by its IP.
+ * 
+ * It will start by sleeping during timeout negotiation. If negotiation fails,
+ * probe will wake up by itself and exit, otherwise will be interrupted and begin
+ * probing.
  * @author Andre
  */
 public class WorkerProber implements Runnable 
@@ -23,7 +28,14 @@ public class WorkerProber implements Runnable
     private final ByteBuffer bb;
     private final InetAddress ServerIP;
     private final ThreadData ThreadData;
+    private final int PacketTimeout;
 
+    /**
+     * Constructs a worker prober.
+     * @param ThreadData contains the backend IP
+     * @param DatagramSocket through which to send the probe
+     * @param StateManager contains the UDPPort to use.
+     */
     public WorkerProber(ThreadData ThreadData, DatagramSocket DatagramSocket,
                         StateManager StateManager) 
     {
@@ -35,6 +47,7 @@ public class WorkerProber implements Runnable
                                          bb.capacity(),
                                          ServerIP,
                                          StateManager.getUDPPort());
+        PacketTimeout = StateManager.getPacketTimeout();
     }
 
     @Override
@@ -45,7 +58,7 @@ public class WorkerProber implements Runnable
         try 
         {
             //Sleep during negotiation
-            Thread.sleep(30000);
+            Thread.sleep(PacketTimeout * 3100);
         } 
         catch (InterruptedException ex) 
         {
