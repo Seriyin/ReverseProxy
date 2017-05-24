@@ -19,7 +19,7 @@ import reverseproxy.udpmanager.WorkerProcessor;
 
 /**
  *
- * @author Andre
+ * @author Andre, Nuno, Matias
  */
 public class TCPServer implements Runnable
 {
@@ -45,7 +45,12 @@ public class TCPServer implements Runnable
             try 
             {
                 Socket s=ServerSocket.accept();
-                SocketWorkerFactory.buildSocketWorker(s, StateManager);
+                if(StateManager.getConnectionPriorityMap().isEmpty())
+                    s.close();
+                else
+                {
+                    SocketWorkerFactory.buildSocketWorker(s, StateManager);
+                }
             }
             catch (IOException ex) 
             {
