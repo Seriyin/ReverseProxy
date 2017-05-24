@@ -68,7 +68,7 @@ public class WorkerFactory {
      */
     public void buildSocketWorker(Socket RequestsSocket, StateManager StateManager) 
     {
-        FixedThreadPool.submit(new WorkerPriority(StateManager, RequestsSocket));
+        FixedThreadPool.submit(new WorkerPriority(StateManager, RequestsSocket,FixedThreadPool));
     }
 
 

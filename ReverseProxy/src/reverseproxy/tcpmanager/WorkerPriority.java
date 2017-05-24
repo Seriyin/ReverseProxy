@@ -42,13 +42,15 @@ public class WorkerPriority implements Runnable {
         try {
             beSocket = new Socket(IP, StateManager.getTCPPort());
             FixedThreadPool.submit(new TCPWorker(RequestsSocket,
+                    beSocket,
                     StateManager,
-                    true,
-                    beSocket));
+                    true
+            ));
             FixedThreadPool.submit(new TCPWorker(RequestsSocket,
+                    beSocket,
                     StateManager,
-                    false,
-                    beSocket));
+                    false
+            ));
         } catch (IOException ex) {
             Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
