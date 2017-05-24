@@ -8,6 +8,7 @@ package reverseproxy.tcpmanager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
@@ -22,52 +23,78 @@ import reverseproxy.StateManager;
 public class TCPWorker implements Runnable {
 
     private final Socket RequestsSocket;
-    private final ConcurrentLinkedQueue<PriorityData> ConnectionPriorityMap;
+    private final InetAddress beServer;
     private final int backEndTCPport;
+    private final boolean direction;
 
-    public TCPWorker(Socket RequestsSocket, StateManager StateManager) {
+    public TCPWorker(Socket RequestsSocket, StateManager StateManager, boolean direc, InetAddress beServer ) {
         this.RequestsSocket = RequestsSocket;
-        this.ConnectionPriorityMap = StateManager.getConnectionPriorityMap();
+        this.beServer = beServer;
         this.backEndTCPport = StateManager.getTCPPort();
+        this.direction = direc;
     }
 
     @Override
     public void run() {
         byte buffer[] = new byte[1024];
         Socket beSocket = null;
-        OutputStream beOutputstream;
-        InputStream reqInputstream;
-        PriorityData beServer
-                = ConnectionPriorityMap
-                        .stream()
-                        .min(((s1, s2) -> Integer
-                        .compare(s1.calculatePriority(), s2.calculatePriority())))
-                        .get();
-        try {
-            beSocket = new Socket(beServer.getServerAddress(), backEndTCPport);
-        } catch (IOException ex) {
-            Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        if (beSocket != null) {
+        OutputStream Outputstream;
+        InputStream Inputstream;
+        if (direction == true) {
             try {
-                beOutputstream = beSocket.getOutputStream();
-                reqInputstream = RequestsSocket.getInputStream();
-                while (reqInputstream.read(buffer) != -1) {
-                    beOutputstream.write(buffer);
+                beSocket = new Socket(beServer, backEndTCPport);
+            } catch (IOException ex) {
+                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if (beSocket != null) {
+                try {
+                    Outputstream = beSocket.getOutputStream();
+                    Inputstream = RequestsSocket.getInputStream();
+                    while (Inputstream.read(buffer) != -1) {
+                        Outputstream.write(buffer);
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (IOException ex) {
-                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+                try {
+                    beSocket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             try {
-                beSocket.close();
+                RequestsSocket.close();
             } catch (IOException ex) {
                 Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        try {
-            RequestsSocket.close();
-        } catch (IOException ex) {
-            Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+        else{
+            try {
+                beSocket = new Socket(beServer, backEndTCPport);
+            } catch (IOException ex) {
+                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if (beSocket != null) {
+                try {
+                    Outputstream = RequestsSocket.getOutputStream();
+                    Inputstream = beSocket.getInputStream();
+                    while (Inputstream.read(buffer) != -1) {
+                        Outputstream.write(buffer);
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                try {
+                    beSocket.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            try {
+                RequestsSocket.close();
+            } catch (IOException ex) {
+                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
     }
