@@ -59,21 +59,15 @@ public class TCPWorker implements Runnable {
                 Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
             }
             try {
-                RequestsSocket.close();
-            } catch (IOException ex) {
-                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            try {
                 beSocket.close();
             } catch (IOException ex) {
                 Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } else {
-            try {
-                RequestsSocket.close();
-            } catch (IOException ex) {
-                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        }
+        try {
+            RequestsSocket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
 
     }
