@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,6 +52,7 @@ public class TCPWorker implements Runnable {
                     Outputstream = beSocket.getOutputStream();
                     Inputstream = RequestsSocket.getInputStream();
                     while (Inputstream.read(buffer) != -1) {
+                        System.out.println("TCP get - " + Arrays.toString(buffer));
                         Outputstream.write(buffer);
                     }
                 } catch (IOException ex) {
@@ -79,6 +81,7 @@ public class TCPWorker implements Runnable {
                     Outputstream = RequestsSocket.getOutputStream();
                     Inputstream = beSocket.getInputStream();
                     while (Inputstream.read(buffer) != -1) {
+                        System.out.println("TCP write - " + Arrays.toString(buffer));
                         Outputstream.write(buffer);
                     }
                 } catch (IOException ex) {

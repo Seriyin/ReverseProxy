@@ -67,28 +67,24 @@ public class WorkerFactory {
     }
      */
     public void buildSocketWorker(Socket RequestsSocket, StateManager StateManager) {
-        FixedThreadPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                InetAddress IP = StateManager.getConnectionPriorityMap()
-                        .stream()
-                        .min((a, b) -> Integer.compare(
-                                a.calculatePriority(),
-                                b.calculatePriority()))
-                        .get()
-                        .getServerAddress();
-                FixedThreadPool.submit(new TCPWorker(RequestsSocket,
-                        StateManager,
-                        true,
-                        IP));
-                FixedThreadPool.submit(new TCPWorker(RequestsSocket,
-                        StateManager,
-                        false,
-                        IP));
-            }
+        FixedThreadPool.submit(() -> {
+            InetAddress IP = StateManager.getConnectionPriorityMap()
+                    .stream()
+                    .min((a, b) -> Integer.compare(
+                            a.calculatePriority(),
+                            b.calculatePriority()))
+                    .get()
+                    .getServerAddress();
+            FixedThreadPool.submit(new TCPWorker(RequestsSocket,
+                    StateManager,
+                    true,
+                    IP));
+            FixedThreadPool.submit(new TCPWorker(RequestsSocket,
+                    StateManager,
+                    false,
+                    IP));
         });
     }
 
-}
 
 }
