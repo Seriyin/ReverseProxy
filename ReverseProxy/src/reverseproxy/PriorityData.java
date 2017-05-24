@@ -72,4 +72,7 @@ public class PriorityData
     {
         activeconnections--;
     }
+    public InetAddress getServerAddress(){
+        return this.ServerAddress;
+    }
 }
