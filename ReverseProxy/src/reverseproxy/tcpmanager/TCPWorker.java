@@ -24,13 +24,13 @@ import reverseproxy.StateManager;
 public class TCPWorker implements Runnable {
 
     private final Socket RequestsSocket;
-    private final InetAddress beServer;
+    private final Socket beSocket;
     private final int backEndTCPport;
     private final boolean direction;
 
-    public TCPWorker(Socket RequestsSocket, StateManager StateManager, boolean direc, InetAddress beServer ) {
+    public TCPWorker(Socket RequestsSocket, Socket beSocket ,StateManager StateManager, boolean direc ) {
         this.RequestsSocket = RequestsSocket;
-        this.beServer = beServer;
+        this.beSocket = beSocket;
         this.backEndTCPport = StateManager.getTCPPort();
         this.direction = direc;
     }
@@ -38,15 +38,9 @@ public class TCPWorker implements Runnable {
     @Override
     public void run() {
         byte buffer[] = new byte[1024];
-        Socket beSocket = null;
         OutputStream Outputstream;
         InputStream Inputstream;
         if (direction == true) {
-            try {
-                beSocket = new Socket(beServer, backEndTCPport);
-            } catch (IOException ex) {
-                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
-            }
             if (beSocket != null) {
                 try {
                     Outputstream = beSocket.getOutputStream();
@@ -71,11 +65,6 @@ public class TCPWorker implements Runnable {
             }
         }
         else{
-            try {
-                beSocket = new Socket(beServer, backEndTCPport);
-            } catch (IOException ex) {
-                Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
-            }
             if (beSocket != null) {
                 try {
                     Outputstream = RequestsSocket.getOutputStream();
