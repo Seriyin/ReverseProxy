@@ -48,7 +48,7 @@ public final class StateManager
                         new BufferedReader(
                             new InputStreamReader(
                                  new FileInputStream(
-                                        new File("./config.json")))));
+                                        new File("config.json")))));
             JsonObject jso;
             jso=jsr.readObject();
             JsonNumber jsn = jso.getJsonNumber("MaxServerConnections");
@@ -92,8 +92,9 @@ public final class StateManager
         {
             MaxServerConnections=128;
             WindowSize=30;
-            PacketTimeout=5;
+            PacketTimeout=10;
             MaxTCPConnections=2048;
+            System.err.println("Config not found - Reverting to defaults");
         }
         this.UDPPort = UDPPort;
         this.TCPPort = TCPPort;

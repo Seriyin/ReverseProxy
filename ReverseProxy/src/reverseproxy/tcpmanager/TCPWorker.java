@@ -88,7 +88,6 @@ public class TCPWorker implements Runnable {
                 Logger.getLogger(TCPWorker.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
     }
 
 }
