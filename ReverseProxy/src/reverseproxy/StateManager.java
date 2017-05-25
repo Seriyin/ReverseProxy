@@ -29,7 +29,6 @@ import javax.json.JsonReader;
  */
 public final class StateManager 
 {
-
     private final int UDPPort;
     private final int TCPPort;
     private int MaxServerConnections;
@@ -92,8 +91,9 @@ public final class StateManager
         {
             MaxServerConnections=128;
             WindowSize=30;
-            PacketTimeout=10;
+            PacketTimeout=5;
             MaxTCPConnections=2048;
+            ex.printStackTrace();
             System.err.println("Config not found - Reverting to defaults");
         }
         this.UDPPort = UDPPort;
