@@ -62,14 +62,6 @@ public class UDPServer implements Runnable
     @Override
     public void run() 
     {
-        try 
-        {
-            ServerSocket.setSoTimeout(4000);
-        } 
-        catch (SocketException ex) 
-        {
-            Logger.getLogger(WorkerProcessor.class.getName()).log(Level.SEVERE, null, ex);
-        }
         System.out.println("Begin listen on " + StateManager.getUDPPort());
         while(true) 
         {
@@ -87,7 +79,6 @@ public class UDPServer implements Runnable
                     buildSocketWorkerForIP();
                 }
             }
-            catch(SocketException ex) {}
             catch (IOException ex) 
             {
                 //Should handle carefully packet corruption

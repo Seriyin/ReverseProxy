@@ -10,8 +10,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -41,7 +41,7 @@ public class WorkerProcessor implements Runnable
     private final PriorityData PriorityData;
     private final ArrayBlockingQueue<DatagramPacket> PacketQueue;
     private final Map<InetAddress,ThreadData> ThreadDataMap;
-    private final ArrayList<Long> timeStampWindow;
+    private final Map<Integer,Long> timeStampWindow;
     private final int windowSize;
     private int windowCounter;
     private int windowTimeouts;
@@ -73,7 +73,7 @@ public class WorkerProcessor implements Runnable
         windowSize= StateManager.getWindowSize();
         ConnectionPriorityMap.add(PriorityData);
         CurrentPacket = null;
-        timeStampWindow = new ArrayList<>();
+        timeStampWindow = new HashMap<>(windowSize*2);
         windowCounter = 0;
         windowTimeouts = 0;
         this.ThreadDataMap = ThreadDataMap;
@@ -141,15 +141,15 @@ public class WorkerProcessor implements Runnable
             
             if (window == windowCounter)
             {
-                timeStampWindow.add(timestamp);
+                timeStampWindow.put(sequenceNumber,timestamp);
             }
             else if (window > windowCounter)
             {
                 int lost = windowSize-timeStampWindow.size();
                 long sum=0;
-                for (int i=0; i< timeStampWindow.size(); i++) 
+                for (Long time : timeStampWindow.values()) 
                 {
-                    sum += (timeStampWindow.get(i))^2;
+                    sum += time^2;
                 }
                 int mean;
                 mean = (int)Math.sqrt(sum/timeStampWindow.size())/1000;
@@ -157,7 +157,7 @@ public class WorkerProcessor implements Runnable
                 PriorityData.updateWindow(mean, lost, windowTimeouts);
                 timeStampWindow.clear();
                 this.windowCounter = window;
-                timeStampWindow.add(timestamp);
+                timeStampWindow.put(sequenceNumber,timestamp);
                 windowTimeouts=0;
             }
         }
