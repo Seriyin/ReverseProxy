@@ -17,8 +17,11 @@ import reverseproxy.PriorityData;
 import reverseproxy.StateManager;
 
 /**
- *
- * @author Andre
+ * A worker that Filters the BackEnd servers, and finds the one with the most
+ * priority (the smallest value from calculatePriority()).
+ * After getting the BAckEnd Server, It starts 2 Threads from WorkerFactory,
+ * to Run one TCPWorker in each one.
+ * @author Andre, Nuno, Matias
  */
 public class WorkerPriority implements Runnable {
 
@@ -26,6 +29,13 @@ public class WorkerPriority implements Runnable {
     private final Socket RequestsSocket;
     private final ExecutorService FixedThreadPool;
 
+    /**
+     * Constructs a worker prober.
+     * @param StateManager contains the PriorityData Table, in which the Address
+     * for the BackEnd Server.
+     * @param RequestsSocket through which the TCP request was received
+     * @param StateManager contains the UDPPort to use.
+     */
     public WorkerPriority(StateManager StateManager, Socket RequestsSocket, ExecutorService ftp) {
         this.StateManager = StateManager;
         this.RequestsSocket = RequestsSocket;

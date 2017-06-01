@@ -35,7 +35,11 @@ public class TCPServer implements Runnable
     }
 
 
-
+/**
+ * The main thread of the TCPServer waits for connections; to start the
+ * communication between the RequestsServer and the choosen, by
+ * priorities, BackEnd Server.
+ */
     @Override
     public void run() 
     {

@@ -8,30 +8,30 @@ package reverseproxy.tcpmanager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import reverseproxy.PriorityData;
 import reverseproxy.StateManager;
 
 /**
- *
+ * TCPWorker functions only has a path of communication beetween the Requets
+ * Server and the Back End Server;
+ * It is executed two times per request, one to Read from Requests Server and to
+ * Write to the BackEnd Server (direction = true); another to Read from BackEnd
+ * Server and to Write to the Request Server(direction = false).
+ * 
  * @author Andre, Nuno, Matias
  */
 public class TCPWorker implements Runnable {
 
     private final Socket RequestsSocket;
     private final Socket beSocket;
-    private final int backEndTCPport;
     private final boolean direction;
 
     public TCPWorker(Socket RequestsSocket, Socket beSocket ,StateManager StateManager, boolean direc ) {
         this.RequestsSocket = RequestsSocket;
         this.beSocket = beSocket;
-        this.backEndTCPport = StateManager.getTCPPort();
         this.direction = direc;
     }
 

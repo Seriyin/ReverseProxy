@@ -48,24 +48,6 @@ public class WorkerFactory {
      * @param StateManager contains the priority data table.
      * @return
      */
-    /*public Future<?> buildSocketWorker(Socket RequestsSocket,
-            StateManager StateManager) {
-        PriorityData lowest;
-        try {
-            lowest = FixedThreadPool.submit(() -> {
-                return StateManager.getConnectionPriorityMap().stream().min((s1, s2) -> Integer
-                        .compare(s1.calculatePriority(), s2.calculatePriority()))
-                        .get();
-            }).get();
-        } catch (InterruptedException ex) {
-            Logger.getLogger(WorkerFactory.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ExecutionException ex) {
-            Logger.getLogger(WorkerFactory.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return FixedThreadPool.submit(new TCPWorker(RequestsSocket, StateManager,
-                lowest, true));
-    }
-     */
     public void buildSocketWorker(Socket RequestsSocket, StateManager StateManager) 
     {
         FixedThreadPool.submit(new WorkerPriority(StateManager, RequestsSocket,FixedThreadPool));
